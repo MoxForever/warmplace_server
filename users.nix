@@ -14,5 +14,6 @@
     shell = pkgs.fish;
     home = "/home/deploy";
     createHome = true;
+    extraGroups = [ "docker" ];
   };
 }
