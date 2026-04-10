@@ -39,10 +39,7 @@ in
   };
 
   config = mkIf (cfg != { }) {
-    virtualisation.docker = {
-      enable = true;
-      extraOptions = "--add-host=host.docker.internal:host-gateway";
-    };
+    virtualisation.docker.enable = true;
 
     environment.systemPackages = [
       (pkgs.writeShellScriptBin "docker-update" ''
@@ -105,7 +102,7 @@ in
           ${pkgs.git}/bin/git checkout ${app.branch}
           ${pkgs.git}/bin/git pull origin ${app.branch}
 
-          ${pkgs.docker}/bin/docker build -t ${name} .
+          ${pkgs.docker}/bin/docker build -t ${name}:${app.branch}-latest .
 
           ${pkgs.docker}/bin/docker stop ${name}
           ${pkgs.docker}/bin/docker rm ${name}
@@ -113,9 +110,10 @@ in
           PORTS="${concatStringsSep " " (map (p: "-p " + p) app.ports)}"
 
           ${pkgs.docker}/bin/docker run -d \
-            --name ${name} \
+            --name ${name} \ 
+            --add-host=host.docker.internal:host-gateway \
             $PORTS \
-            ${name}
+            ${name}:${app.branch}-latest
         '';
       }
     ) cfg;
