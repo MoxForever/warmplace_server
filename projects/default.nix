@@ -1,0 +1,7 @@
+{ ... }:
+
+{
+  imports = [
+    ./warmplace.nix
+  ];
+}

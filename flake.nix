@@ -18,7 +18,10 @@
           inherit stateVersion;
         };
         modules = [
-          ./configuration.nix
+          ./modules
+          ./projects
+          ./users.nix
+          ./hardware-configuration.nix
         ];
       };
     };

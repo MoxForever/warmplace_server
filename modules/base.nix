@@ -7,10 +7,6 @@
 }:
 
 {
-  imports = [
-    ./hardware-configuration.nix
-  ];
-
   boot.loader = {
     systemd-boot.enable = false;
     grub = {
@@ -19,20 +15,11 @@
     };
   };
 
+  networking.firewall.enable = true;
   networking.hostName = "warmplace";
   networking.networkmanager.enable = true;
 
   time.timeZone = "UTC";
-
-  services.openssh = {
-    enable = true;
-
-    settings = {
-      PasswordAuthentication = false;
-      PermitRootLogin = "yes";
-    };
-  };
-  services.qemuGuest.enable = true;
 
   environment.systemPackages = with pkgs; [
     git
@@ -47,12 +34,6 @@
 
   programs.fish.enable = true;
 
-  users.users.root = {
-    shell = pkgs.fish;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGxoIuwEmcH0zAmBkYbGUeWgcoXcz0VEMI5/wT3ydOx4"
-    ];
-  };
-
+  services.qemuGuest.enable = true;
   system.stateVersion = stateVersion;
 }
