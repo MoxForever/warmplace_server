@@ -29,6 +29,11 @@ in
             default = [ ];
           };
 
+          volumes = mkOption {
+            type = types.listOf types.str;
+            default = [ ];
+          };
+
           path = mkOption {
             type = types.str;
             default = "/home/deploy";
@@ -142,12 +147,14 @@ in
           fi
 
           PORTS="${concatStringsSep " " (map (p: "-p " + p) app.ports)}"
+          VOLUMES="${concatStringsSep " " (map (v: "-v " + v) app.volumes)}"
 
           ${pkgs.docker}/bin/docker run -d \
             --name ${name} \
             --add-host=host.docker.internal:host-gateway \
             --env-file .env \
             $PORTS \
+            $VOLUMES \
             ${name}:${app.branch}-latest
         '';
       }
