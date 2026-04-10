@@ -15,10 +15,6 @@
     };
   };
 
-  networking.firewall.enable = true;
-  networking.hostName = "warmplace";
-  networking.networkmanager.enable = true;
-
   time.timeZone = "UTC";
 
   environment.systemPackages = with pkgs; [
