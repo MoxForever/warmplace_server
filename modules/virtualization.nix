@@ -31,7 +31,7 @@ in
 
           path = mkOption {
             type = types.str;
-            default = "~/";
+            default = "~";
           };
         };
       }
