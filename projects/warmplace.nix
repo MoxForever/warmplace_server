@@ -24,7 +24,7 @@
     repo = "git@github.com:WarmYaeShop/warmplace_shop.git";
     branch = "main";
     dockerfile = "docker/Dockerfile";
-    ports = [ "8001:8000" ];
+    ports = [ "8001:80" ];
     volumes = [
       "/home/deploy/warmplace-data:/usr/src/app/data"
       "/home/deploy/price_sheets:/usr/src/app/price_sheets:rw"
