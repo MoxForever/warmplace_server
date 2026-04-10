@@ -31,13 +31,6 @@
     forceSSL = true;
     enableACME = true;
 
-    listen = [
-      {
-        port = 443;
-        addr = "0.0.0.0";
-      }
-    ];
-
     locations."/" = {
       proxyPass = "http://localhost:8001/";
     };
