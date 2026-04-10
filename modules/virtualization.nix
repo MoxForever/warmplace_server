@@ -69,6 +69,17 @@ in
       name: app:
       nameValuePair "docker-deploy-${name}" {
         wantedBy = [ "multi-user.target" ];
+        path = [
+          pkgs.openssh
+          pkgs.git
+          pkgs.docker
+          pkgs.coreutils
+          pkgs.gnugrep
+        ];
+
+        environment = {
+          GIT_SSH_COMMAND = "${pkgs.openssh}/bin/ssh";
+        };
 
         serviceConfig = {
           Type = "oneshot";
@@ -118,7 +129,7 @@ in
           PORTS="${concatStringsSep " " (map (p: "-p " + p) app.ports)}"
 
           ${pkgs.docker}/bin/docker run -d \
-            --name ${name} \ 
+            --name ${name} \
             --add-host=host.docker.internal:host-gateway \
             $PORTS \
             ${name}:${app.branch}-latest
