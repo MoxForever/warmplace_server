@@ -136,8 +136,10 @@ in
             -t ${name}:${app.branch}-latest \
             .
 
-          ${pkgs.docker}/bin/docker stop ${name}
-          ${pkgs.docker}/bin/docker rm ${name}
+          if ${pkgs.docker}/bin/docker ps -a --format '{{.Names}}' | ${pkgs.gnugrep}/bin/grep -Fxq ${name}; then
+            ${pkgs.docker}/bin/docker stop ${name}
+            ${pkgs.docker}/bin/docker rm ${name}
+          fi
 
           PORTS="${concatStringsSep " " (map (p: "-p " + p) app.ports)}"
 
