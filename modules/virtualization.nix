@@ -82,6 +82,13 @@ in
           #!/usr/bin/env bash
           set -e
 
+          # Skip deployment until deploy user can authenticate to GitHub over SSH.
+          SSH_TEST_OUTPUT="$(${pkgs.coreutils}/bin/timeout 10 ${pkgs.openssh}/bin/ssh -T -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new git@github.com 2>&1 || true)"
+          if ! echo "$SSH_TEST_OUTPUT" | ${pkgs.gnugrep}/bin/grep -q "successfully authenticated"; then
+            echo "GitHub SSH auth is not ready, skipping docker-deploy-${name}"
+            exit 0
+          fi
+
           APP_DIR="${app.path}/${name}"
 
           if [ ! -d "$APP_DIR/.git" ]; then
