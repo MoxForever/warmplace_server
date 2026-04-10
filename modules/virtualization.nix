@@ -31,7 +31,7 @@ in
 
           path = mkOption {
             type = types.str;
-            default = "~";
+            default = "/home/deploy";
           };
         };
       }
@@ -86,7 +86,15 @@ in
             exit 0
           fi
 
-          APP_DIR="${app.path}/${name}"
+          BASE_PATH="${app.path}"
+          if [[ "$BASE_PATH" == "~" ]]; then
+            BASE_PATH="$HOME"
+          elif [[ "$BASE_PATH" == ~/* ]]; then
+            BASE_PATH="$HOME/''${BASE_PATH#~/}"
+          fi
+
+          APP_DIR="$BASE_PATH/${name}"
+          mkdir -p "$BASE_PATH"
 
           if [ ! -d "$APP_DIR/.git" ]; then
             ${pkgs.git}/bin/git clone \

@@ -12,5 +12,7 @@
   users.users.deploy = {
     isNormalUser = true;
     shell = pkgs.fish;
+    home = "/home/deploy";
+    createHome = true;
   };
 }
