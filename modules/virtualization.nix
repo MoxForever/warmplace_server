@@ -33,6 +33,11 @@ in
             type = types.str;
             default = "/home/deploy";
           };
+
+          dockerfile = mkOption {
+            type = types.str;
+            default = "Dockerfile";
+          };
         };
       }
     );
@@ -121,7 +126,15 @@ in
           ${pkgs.git}/bin/git checkout ${app.branch}
           ${pkgs.git}/bin/git pull origin ${app.branch}
 
-          ${pkgs.docker}/bin/docker build -t ${name}:${app.branch}-latest .
+          if [ ! -f "$APP_DIR/${app.dockerfile}" ]; then
+            echo "Dockerfile not found: $APP_DIR/${app.dockerfile}"
+            exit 1
+          fi
+
+          ${pkgs.docker}/bin/docker build \
+            -f "$APP_DIR/${app.dockerfile}" \
+            -t ${name}:${app.branch}-latest \
+            .
 
           ${pkgs.docker}/bin/docker stop ${name}
           ${pkgs.docker}/bin/docker rm ${name}
