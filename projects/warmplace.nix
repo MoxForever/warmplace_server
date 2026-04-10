@@ -28,7 +28,6 @@
   };
 
   services.nginx.virtualHosts."warmplace.moxforever.com" = {
-    enable = true;
     forceSSL = true;
     enableACME = true;
 
