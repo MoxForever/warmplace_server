@@ -27,7 +27,7 @@
     ports = [ "8001:8000" ];
   };
 
-  nginx.virtualHosts."warmplace.moxforever.com" = {
+  services.nginx.virtualHosts."warmplace.moxforever.com" = {
     enable = true;
     forceSSL = true;
     enableACME = true;
