@@ -8,6 +8,10 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGxoIuwEmcH0zAmBkYbGUeWgcoXcz0VEMI5/wT3ydOx4"
     ];
+    extraGroups = [
+      "docker"
+      "wheel"
+    ];
   };
   users.users.deploy = {
     isNormalUser = true;
