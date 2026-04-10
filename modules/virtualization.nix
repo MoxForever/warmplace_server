@@ -43,6 +43,31 @@ in
       enable = true;
       extraOptions = "--add-host=host.docker.internal:host-gateway";
     };
+
+    environment.systemPackages = [
+      (pkgs.writeShellScriptBin "docker-update" ''
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        if [[ $# -ne 1 ]]; then
+          echo "Usage: docker-update <app-name>"
+          exit 1
+        fi
+
+        APP_NAME="$1"
+        SERVICE="docker-deploy-$APP_NAME.service"
+
+        if ! ${pkgs.systemd}/bin/systemctl list-unit-files "$SERVICE" --no-legend | ${pkgs.gnugrep}/bin/grep -q "$SERVICE"; then
+          echo "Unknown app: $APP_NAME"
+          echo "Available apps: ${concatStringsSep " " (attrNames cfg)}"
+          exit 1
+        fi
+
+        ${pkgs.systemd}/bin/systemctl start "$SERVICE"
+        ${pkgs.systemd}/bin/systemctl status "$SERVICE" --no-pager
+      '')
+    ];
+
     systemd.services = mapAttrs' (
       name: app:
       nameValuePair "docker-deploy-${name}" {
