@@ -146,6 +146,7 @@ in
           ${pkgs.docker}/bin/docker run -d \
             --name ${name} \
             --add-host=host.docker.internal:host-gateway \
+            --env-file .env \
             $PORTS \
             ${name}:${app.branch}-latest
         '';
