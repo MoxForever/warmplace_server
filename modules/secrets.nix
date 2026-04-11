@@ -12,11 +12,11 @@
     };
   };
 
-  system.activationScripts.deploySshConfig.text = ''
-    install -d -m 0700 -o deploy -g deploy /home/deploy/.ssh
-    install -m 0644 -o deploy -g deploy ${pkgs.writeText "ssh-config" ''
+  systemd.tmpfiles.rules = [
+    "d /home/deploy/.ssh 0700 deploy deploy - -"
+    "L+ /home/deploy/.ssh/config - - - - ${pkgs.writeText "ssh-config" ''
       Host github.com
         IdentityFile /run/secrets/deploy_github_ssh_key
-    ''} /home/deploy/.ssh/config
-  '';
+    ''}"
+  ];
 }
