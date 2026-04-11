@@ -1,0 +1,10 @@
+keys:
+  - &moxforever age1cvlasnruruzgt7hur35xry2ujwvx609qsgh388gg3wgq3pwe0fasj64qr3
+  - &server age15m3mqwumrt032zg5aygems66sgf54vsmwzg7gvsesdunyll6tulqs6d3hc
+
+creation_rules:
+  - path_regex: secrets.yaml
+    key_groups:
+      - age:
+          - *moxforever
+          - *server
