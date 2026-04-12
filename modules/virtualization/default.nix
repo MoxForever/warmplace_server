@@ -11,7 +11,7 @@ let
   cfg = config.docker-deploy;
 
   githubAuthScript = pkgs.writeShellScriptBin "github-app-token" ''
-    ${builtins.readFile ./github-app-token.sh} \
+    ${pkgs.bash}/bin/bash ${./github-app-token.sh} \
       --app-id-file "${config.sops.secrets.github_app_app_id.path}" \
       --installation-id-file "${config.sops.secrets.github_app_installation_id.path}" \
       --private-key-file "${config.sops.secrets.github_app_private_key.path}"
@@ -91,7 +91,7 @@ in
         };
 
         script = ''
-          ${builtins.readFile ./docker-deploy-service.sh} \
+          ${pkgs.bash}/bin/bash ${./docker-deploy-service.sh} \
             --app-name "${name}" \
             --repo "${app.repo}" \
             --branch "${app.branch}" \
