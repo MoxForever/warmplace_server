@@ -21,7 +21,7 @@
   };
 
   docker-deploy."warmplace" = {
-    repo = "git@github.com:WarmYaeShop/warmplace_shop.git";
+    repo = "https://github.com/WarmYaeShop/warmplace_shop";
     branch = "main";
     dockerfile = "docker/Dockerfile";
     ports = [ "8001:80" ];

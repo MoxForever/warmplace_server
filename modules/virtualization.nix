@@ -88,6 +88,23 @@ in
   config = mkIf (cfg != { }) {
     virtualisation.docker.enable = true;
 
+    sops.secrets = {
+      github_app_app_id = {
+        owner = "root";
+        mode = "0400";
+      };
+
+      github_app_installation_id = {
+        owner = "root";
+        mode = "0400";
+      };
+
+      github_app_private_key = {
+        owner = "root";
+        mode = "0400";
+      };
+    };
+
     environment.systemPackages = [
       githubAuthScript
 
