@@ -11,15 +11,9 @@ with lib;
 let
   cfg = config.docker-deploy;
 
-  dockerUpdateCompletions = pkgs.stdenv.mkDerivation {
-    name = "docker-update-completions";
-    src = ./docker-update.fish;
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir -p $out/share/fish/vendor_completions.d
-      cp $src $out/share/fish/vendor_completions.d/docker-update.fish
-    '';
-  };
+  dockerUpdateCompletions = pkgs.writeTextDir "share/fish/vendor_completions.d/docker-update.fish" (
+    builtins.readFile ./docker-update.fish
+  );
 
 in
 
