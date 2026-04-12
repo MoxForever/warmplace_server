@@ -81,6 +81,7 @@ fi
 APP_DIR="$BASE_PATH/$APP_NAME"
 mkdir -p "$BASE_PATH"
 
+# clone if not exists
 if [ ! -d "$APP_DIR/.git" ]; then
   git clone \
     -b "$APP_BRANCH" \
@@ -97,41 +98,60 @@ git fetch origin "$APP_BRANCH"
 git checkout "$APP_BRANCH"
 git pull origin "$APP_BRANCH"
 
+# === GIT HASH ===
+GIT_HASH=$(git rev-parse HEAD)
+
+# === CHECK CURRENT RUNNING CONTAINER ===
+CURRENT_HASH=""
+
+if docker ps -a --format '{{.Names}}' | grep -Fxq "$APP_NAME"; then
+  CURRENT_HASH=$(docker inspect "$APP_NAME" \
+    --format='{{ index .Config.Labels "git.commit" }}' 2>/dev/null || true)
+fi
+
+if [[ "$CURRENT_HASH" == "$GIT_HASH" && -n "$CURRENT_HASH" ]]; then
+  echo "No changes detected (git commit: $GIT_HASH) → skipping deploy"
+  exit 0
+fi
+
+# === CHECK DOCKERFILE ===
 if [ ! -f "$APP_DIR/$APP_DOCKERFILE" ]; then
   echo "Dockerfile not found: $APP_DIR/$APP_DOCKERFILE"
   exit 1
 fi
 
+# === BUILD IMAGE ===
 docker build \
   -f "$APP_DIR/$APP_DOCKERFILE" \
+  --build-arg GIT_COMMIT="$GIT_HASH" \
   -t "$APP_NAME:$APP_BRANCH-latest" \
   .
 
+# === STOP OLD CONTAINER ===
 if docker ps -a --format '{{.Names}}' | grep -Fxq "$APP_NAME"; then
-  docker stop "$APP_NAME"
-  docker rm "$APP_NAME"
+  docker stop "$APP_NAME" || true
+  docker rm "$APP_NAME" || true
 fi
 
+# === PORTS ===
 PORT_ARGS=()
 if [[ -n "${APP_PORTS:-}" ]]; then
   IFS=',' read -r -a PORTS <<< "$APP_PORTS"
   for p in "${PORTS[@]}"; do
-    if [[ -n "$p" ]]; then
-      PORT_ARGS+=("-p" "$p")
-    fi
+    [[ -n "$p" ]] && PORT_ARGS+=("-p" "$p")
   done
 fi
 
+# === VOLUMES ===
 VOLUME_ARGS=()
 if [[ -n "${APP_VOLUMES:-}" ]]; then
   IFS=',' read -r -a VOLUMES <<< "$APP_VOLUMES"
   for v in "${VOLUMES[@]}"; do
-    if [[ -n "$v" ]]; then
-      VOLUME_ARGS+=("-v" "$v")
-    fi
+    [[ -n "$v" ]] && VOLUME_ARGS+=("-v" "$v")
   done
 fi
 
+# === RUN NEW CONTAINER ===
 docker run -d \
   --name "$APP_NAME" \
   --add-host=host.docker.internal:host-gateway \
