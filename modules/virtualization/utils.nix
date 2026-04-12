@@ -2,6 +2,7 @@
   config,
   dockerUpdateScript,
   lib,
+  pkgs,
   ...
 }:
 
@@ -9,6 +10,16 @@ with lib;
 
 let
   cfg = config.docker-deploy;
+
+  dockerUpdateCompletions = pkgs.stdenv.mkDerivation {
+    name = "docker-update-completions";
+    src = ./docker-update.fish;
+    phases = [ "installPhase" ];
+    installPhase = ''
+      mkdir -p $out/share/fish/vendor_completions.d
+      cp $src $out/share/fish/vendor_completions.d/docker-update.fish
+    '';
+  };
 
 in
 
@@ -40,7 +51,9 @@ in
       dockerUpdateScript
     ];
 
-    environment.etc."fish/vendor_completions.d/docker-update.fish".source = ./docker-update.fish;
+    programs.fish.extraCompletionPackages = [
+      dockerUpdateCompletions
+    ];
 
     security.sudo.extraRules = [
       {
