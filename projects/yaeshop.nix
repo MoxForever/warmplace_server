@@ -27,7 +27,6 @@
     ports = [ "8002:80" ];
     volumes = [
       "/home/deploy/yaeshop-data:/usr/src/app/data"
-      "/home/deploy/price_sheets:/usr/src/app/price_sheets:rw"
     ];
   };
 
