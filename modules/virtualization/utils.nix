@@ -40,6 +40,8 @@ in
       dockerUpdateScript
     ];
 
+    environment.etc."fish/vendor_completions.d/docker-update.fish".source = ./docker-update.fish;
+
     security.sudo.extraRules = [
       {
         groups = [ "docker" ];
