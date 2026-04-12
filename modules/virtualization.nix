@@ -9,6 +9,43 @@ with lib;
 
 let
   cfg = config.docker-deploy;
+
+  githubAuthScript = pkgs.writeShellScriptBin "github-app-token" ''
+    set -euo pipefail
+
+    APP_ID="$(${pkgs.coreutils}/bin/cat ${config.sops.secrets.github_app_app_id.path})"
+    INSTALLATION_ID="$(${pkgs.coreutils}/bin/cat ${config.sops.secrets.github_app_installation_id.path})"
+    PRIVATE_KEY_FILE="${config.sops.secrets.github_app_private_key.path}"
+
+    NOW=$(${pkgs.coreutils}/bin/date +%s)
+    IAT=$((NOW - 60))
+    EXP=$((NOW + 600))
+
+    HEADER=$(${pkgs.coreutils}/bin/printf '{"alg":"RS256","typ":"JWT"}' | ${pkgs.coreutils}/bin/base64 -w0 | tr '/+' '_-' | tr -d '=')
+    PAYLOAD=$(${pkgs.jq}/bin/jq -nc \
+      --arg iat "$IAT" \
+      --arg exp "$EXP" \
+      --arg iss "$APP_ID" \
+      '{iat: ($iat|tonumber), exp: ($exp|tonumber), iss: ($iss|tonumber)}' \
+      | ${pkgs.coreutils}/bin/base64 -w0 | tr '/+' '_-' | tr -d '=')
+
+    UNSIGNED="$HEADER.$PAYLOAD"
+
+    SIGNATURE=$(printf %s "$UNSIGNED" | \
+      ${pkgs.openssl}/bin/openssl dgst -sha256 -sign "$PRIVATE_KEY_FILE" | \
+      ${pkgs.coreutils}/bin/base64 -w0 | tr '/+' '_-' | tr -d '=')
+
+    JWT="$UNSIGNED.$SIGNATURE"
+
+    TOKEN=$(${pkgs.curl}/bin/curl -s -X POST \
+      -H "Authorization: Bearer $JWT" \
+      -H "Accept: application/vnd.github+json" \
+      https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens \
+      | ${pkgs.jq}/bin/jq -r .token)
+
+    echo "$TOKEN"
+  '';
+
 in
 {
   options.docker-deploy = mkOption {
@@ -52,8 +89,9 @@ in
     virtualisation.docker.enable = true;
 
     environment.systemPackages = [
+      githubAuthScript
+
       (pkgs.writeShellScriptBin "docker-update" ''
-        #!/usr/bin/env bash
         set -euo pipefail
 
         if [[ $# -ne 1 ]]; then
@@ -64,14 +102,8 @@ in
         APP_NAME="$1"
         SERVICE="docker-deploy-$APP_NAME.service"
 
-        if ! ${pkgs.systemd}/bin/systemctl list-unit-files "$SERVICE" --no-legend | ${pkgs.gnugrep}/bin/grep -q "$SERVICE"; then
-          echo "Unknown app: $APP_NAME"
-          echo "Available apps: ${concatStringsSep " " (attrNames cfg)}"
-          exit 1
-        fi
-
-        ${pkgs.systemd}/bin/systemctl start "$SERVICE"
-        ${pkgs.systemd}/bin/systemctl status "$SERVICE" --no-pager
+        systemctl start "$SERVICE"
+        systemctl status "$SERVICE" --no-pager
       '')
     ];
 
@@ -79,17 +111,16 @@ in
       name: app:
       nameValuePair "docker-deploy-${name}" {
         wantedBy = [ "multi-user.target" ];
+
         path = [
-          pkgs.openssh
           pkgs.git
           pkgs.docker
           pkgs.coreutils
           pkgs.gnugrep
+          pkgs.curl
+          pkgs.jq
+          pkgs.openssl
         ];
-
-        environment = {
-          GIT_SSH_COMMAND = "${pkgs.openssh}/bin/ssh";
-        };
 
         serviceConfig = {
           Type = "oneshot";
@@ -97,15 +128,11 @@ in
         };
 
         script = ''
-          #!/usr/bin/env bash
-          set -e
+          set -euo pipefail
 
-          # Skip deployment until deploy user can authenticate to GitHub over SSH.
-          SSH_TEST_OUTPUT="$(${pkgs.coreutils}/bin/timeout 10 ${pkgs.openssh}/bin/ssh -T -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new git@github.com 2>&1 || true)"
-          if ! echo "$SSH_TEST_OUTPUT" | ${pkgs.gnugrep}/bin/grep -q "successfully authenticated"; then
-            echo "GitHub SSH auth is not ready, skipping docker-deploy-${name}"
-            exit 0
-          fi
+          TOKEN="$(${githubAuthScript}/bin/github-app-token)"
+
+          REPO_URL=$(echo "${app.repo}" | sed 's#https://github.com/#https://x-access-token:'"$TOKEN"'@github.com/#')
 
           BASE_PATH="${app.path}"
           if [[ "$BASE_PATH" == "~" ]]; then
@@ -121,11 +148,13 @@ in
             ${pkgs.git}/bin/git clone \
               -b ${app.branch} \
               --single-branch \
-              ${app.repo} \
+              "$REPO_URL" \
               "$APP_DIR"
           fi
 
           cd "$APP_DIR"
+
+          ${pkgs.git}/bin/git remote set-url origin "$REPO_URL"
 
           ${pkgs.git}/bin/git fetch origin ${app.branch}
           ${pkgs.git}/bin/git checkout ${app.branch}
