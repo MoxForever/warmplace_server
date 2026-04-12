@@ -4,10 +4,6 @@
   pkgs,
   ...
 }:
-
-let
-  secretPath = config.sops.secrets.postgres_passwords.path;
-in
 {
   ########################################
   # Сервисы
@@ -23,7 +19,13 @@ in
     '';
   };
 
-  sops.secrets.postgres_passwords = {
+  sops.secrets.postgres_password_warmplace = {
+    key = "postgres_passwords/warmplace";
+    owner = "postgres";
+  };
+
+  sops.secrets.postgres_password_yaeshop = {
+    key = "postgres_passwords/yaeshop";
     owner = "postgres";
   };
 
@@ -39,37 +41,38 @@ in
     };
 
     path = [
-      pkgs.jq
-      pkgs.yq
-      pkgs.postgresql
+      config.services.postgresql.package
     ];
 
     script = ''
-      set -euo pipefail
+            set -euo pipefail
 
-      json=$(yq -o=json '.' ${config.sops.secrets.postgres_passwords.path})
+            set_role_password() {
+              local user="$1"
+              local password_file="$2"
+              local password
 
-      echo "$json" \
-        | jq -r '.postgres_passwords | to_entries[] | "\(.key)\t\(.value)"' \
-        | while IFS=$'\t' read -r user password; do
+              password="$(cat "$password_file")"
 
-          echo "Processing user: $user"
+              psql -v ON_ERROR_STOP=1 -d postgres --set=role_name="$user" <<'SQL'
+              DO $$
+              BEGIN
+                IF NOT EXISTS (
+                  SELECT FROM pg_catalog.pg_roles WHERE rolname = :'role_name'
+                ) THEN
+                  EXECUTE format('CREATE ROLE %I LOGIN', :'role_name');
+                END IF;
+              END
+              $$;
+      SQL
 
-          psql -v ON_ERROR_STOP=1 -d postgres <<EOF
-          DO $$
-          BEGIN
-            IF NOT EXISTS (
-              SELECT FROM pg_catalog.pg_roles WHERE rolname = '$user'
-            ) THEN
-              CREATE ROLE $user LOGIN;
-            END IF;
-          END
-          $$;
+              psql -v ON_ERROR_STOP=1 -d postgres --set=role_name="$user" --set=role_password="$password" <<'SQL'
+              SELECT format('ALTER ROLE %I WITH PASSWORD %L', :'role_name', :'role_password') \gexec
+      SQL
+            }
 
-          ALTER USER $user WITH PASSWORD '$password';
-          EOF
-
-        done
+            set_role_password "warmplace" "${config.sops.secrets.postgres_password_warmplace.path}"
+            set_role_password "yaeshop" "${config.sops.secrets.postgres_password_yaeshop.path}"
     '';
   };
 }
