@@ -21,7 +21,7 @@
   };
 
   docker-deploy."yaeshop" = {
-    repo = "git@github.com:WarmYaeShop/yaeshop.git";
+    repo = "https://github.com/WarmYaeShop/yae_shop";
     branch = "main";
     dockerfile = "docker/Dockerfile";
     ports = [ "8002:80" ];
