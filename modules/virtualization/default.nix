@@ -70,7 +70,7 @@ in
 
     systemd.services = mapAttrs' (
       name: app:
-      nameValuePair "docker-deploy-${name}" {
+      nameValuePair "docker-deploy@${name}" {
         wantedBy = [ "multi-user.target" ];
 
         path = [

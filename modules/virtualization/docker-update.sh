@@ -6,7 +6,7 @@ if [[ $# -ne 1 ]]; then
 fi
 
 APP_NAME="$1"
-SERVICE="docker-deploy-$APP_NAME.service"
+SERVICE="docker-deploy@$APP_NAME.service"
 
 systemctl start "$SERVICE"
 systemctl status "$SERVICE" --no-pager -l
