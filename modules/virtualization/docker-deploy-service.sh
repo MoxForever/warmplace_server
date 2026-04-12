@@ -101,6 +101,17 @@ git pull origin "$APP_BRANCH"
 # === GIT HASH ===
 GIT_HASH=$(git rev-parse HEAD)
 
+DEPLOYED_HASH_FILE="$APP_DIR/.docker-deploy-commit"
+PREVIOUS_DEPLOYED_HASH=""
+if [ -f "$DEPLOYED_HASH_FILE" ]; then
+  PREVIOUS_DEPLOYED_HASH=$(cat "$DEPLOYED_HASH_FILE")
+fi
+
+if [[ "$PREVIOUS_DEPLOYED_HASH" == "$GIT_HASH" && -n "$PREVIOUS_DEPLOYED_HASH" ]]; then
+  echo "No changes detected (git commit: $GIT_HASH) -> skipping deploy"
+  exit 0
+fi
+
 # === CHECK CURRENT IMAGE SHA ===
 CURRENT_IMAGE_SHA=""
 if docker images --format '{{.Repository}}:{{.Tag}}' | grep -Fxq "$APP_NAME:$APP_BRANCH-latest"; then
@@ -155,3 +166,5 @@ docker run -d \
   "${PORT_ARGS[@]}" \
   "${VOLUME_ARGS[@]}" \
   "$APP_NAME:$APP_BRANCH-latest"
+
+echo "$GIT_HASH" > "$DEPLOYED_HASH_FILE"
