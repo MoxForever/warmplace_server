@@ -10,11 +10,6 @@ with lib;
 
 let
   cfg = config.docker-deploy;
-
-  dockerUpdateCompletions = pkgs.writeTextDir "share/fish/vendor_completions.d/docker-update.fish" (
-    builtins.readFile ./docker-update.fish
-  );
-
 in
 
 {
@@ -43,10 +38,6 @@ in
 
     environment.systemPackages = [
       dockerUpdateScript
-    ];
-
-    programs.fish.extraCompletionPackages = [
-      dockerUpdateCompletions
     ];
 
     security.sudo.extraRules = [
