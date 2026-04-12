@@ -55,15 +55,11 @@
               password="$(cat "$password_file")"
 
               psql -v ON_ERROR_STOP=1 -d postgres --set=role_name="$user" <<'SQL'
-              DO $$
-              BEGIN
-                IF NOT EXISTS (
-                  SELECT FROM pg_catalog.pg_roles WHERE rolname = :'role_name'
-                ) THEN
-                  EXECUTE format('CREATE ROLE %I LOGIN', :'role_name');
-                END IF;
-              END
-              $$;
+              SELECT format('CREATE ROLE %I LOGIN', :'role_name')
+              WHERE NOT EXISTS (
+                SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = :'role_name'
+              )
+              \gexec
       SQL
 
               psql -v ON_ERROR_STOP=1 -d postgres --set=role_name="$user" --set=role_password="$password" <<'SQL'
