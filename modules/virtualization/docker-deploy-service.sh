@@ -101,23 +101,10 @@ git pull origin "$APP_BRANCH"
 # === GIT HASH ===
 GIT_HASH=$(git rev-parse HEAD)
 
-# === CHECK CURRENT RUNNING CONTAINER ===
-CURRENT_HASH=""
-
-if docker ps -a --format '{{.Names}}' | grep -Fxq "$APP_NAME"; then
-  CURRENT_HASH=$(docker inspect "$APP_NAME" \
-    --format='{{ index .Config.Labels "git.commit" }}' 2>/dev/null || true)
-fi
-
-if [[ "$CURRENT_HASH" == "$GIT_HASH" && -n "$CURRENT_HASH" ]]; then
-  echo "No changes detected (git commit: $GIT_HASH) → skipping deploy"
-  exit 0
-fi
-
-# === CHECK DOCKERFILE ===
-if [ ! -f "$APP_DIR/$APP_DOCKERFILE" ]; then
-  echo "Dockerfile not found: $APP_DIR/$APP_DOCKERFILE"
-  exit 1
+# === CHECK CURRENT IMAGE SHA ===
+CURRENT_IMAGE_SHA=""
+if docker images --format '{{.Repository}}:{{.Tag}}' | grep -Fxq "$APP_NAME:$APP_BRANCH-latest"; then
+  CURRENT_IMAGE_SHA=$(docker image inspect "$APP_NAME:$APP_BRANCH-latest" --format='{{.ID}}' 2>/dev/null || true)
 fi
 
 # === BUILD IMAGE ===
@@ -125,7 +112,16 @@ docker build \
   -f "$APP_DIR/$APP_DOCKERFILE" \
   --build-arg GIT_COMMIT="$GIT_HASH" \
   -t "$APP_NAME:$APP_BRANCH-latest" \
-  .
+  . > /tmp/docker-build-$APP_NAME.log 2>&1
+
+# === CHECK NEW IMAGE SHA ===
+NEW_IMAGE_SHA=$(docker image inspect "$APP_NAME:$APP_BRANCH-latest" --format='{{.ID}}')
+
+# === SKIP IF IMAGE UNCHANGED ===
+if [[ "$CURRENT_IMAGE_SHA" == "$NEW_IMAGE_SHA" && -n "$CURRENT_IMAGE_SHA" ]]; then
+  echo "Image unchanged (SHA: ${NEW_IMAGE_SHA:0:19}...) → skipping container restart"
+  exit 0
+fi
 
 # === STOP OLD CONTAINER ===
 if docker ps -a --format '{{.Names}}' | grep -Fxq "$APP_NAME"; then
