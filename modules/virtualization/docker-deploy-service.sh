@@ -8,6 +8,7 @@ APP_DOCKERFILE=""
 APP_PORTS=""
 APP_VOLUMES=""
 APP_ENV_FILE=""
+FORCE_DEPLOY="false"
 
 require_value() {
   local arg_name="$1"
@@ -59,9 +60,13 @@ while [[ $# -gt 0 ]]; do
       APP_ENV_FILE="$2"
       shift 2
       ;;
+    --force)
+      FORCE_DEPLOY="true"
+      shift
+      ;;
     *)
       echo "Unknown argument: $1" >&2
-      echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> --path <path> --dockerfile <file> --ports <csv> --volumes <csv> --env-file <path>" >&2
+      echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> --path <path> --dockerfile <file> --ports <csv> --volumes <csv> --env-file <path> [--force]" >&2
       exit 1
       ;;
   esac
@@ -73,6 +78,12 @@ done
 : "${APP_PATH:?Missing required --path}"
 : "${APP_DOCKERFILE:?Missing required --dockerfile}"
 : "${APP_ENV_FILE:?Missing required --env-file}"
+
+FORCE_MARKER="/run/docker-deploy-force/$APP_NAME"
+if [[ -f "$FORCE_MARKER" ]]; then
+  FORCE_DEPLOY="true"
+  rm -f "$FORCE_MARKER" || true
+fi
 
 TOKEN="$(github-app-token)"
 
@@ -114,7 +125,7 @@ if [ -f "$DEPLOYED_HASH_FILE" ]; then
   PREVIOUS_DEPLOYED_HASH=$(cat "$DEPLOYED_HASH_FILE")
 fi
 
-if [[ "$PREVIOUS_DEPLOYED_HASH" == "$GIT_HASH" && -n "$PREVIOUS_DEPLOYED_HASH" ]]; then
+if [[ "$FORCE_DEPLOY" != "true" && "$PREVIOUS_DEPLOYED_HASH" == "$GIT_HASH" && -n "$PREVIOUS_DEPLOYED_HASH" ]]; then
   echo "No changes detected (git commit: $GIT_HASH) -> skipping deploy"
   exit 0
 fi
@@ -136,7 +147,7 @@ docker build \
 NEW_IMAGE_SHA=$(docker image inspect "$APP_NAME:$APP_BRANCH-latest" --format='{{.ID}}')
 
 # === SKIP IF IMAGE UNCHANGED ===
-if [[ "$CURRENT_IMAGE_SHA" == "$NEW_IMAGE_SHA" && -n "$CURRENT_IMAGE_SHA" ]]; then
+if [[ "$FORCE_DEPLOY" != "true" && "$CURRENT_IMAGE_SHA" == "$NEW_IMAGE_SHA" && -n "$CURRENT_IMAGE_SHA" ]]; then
   echo "Image unchanged (SHA: ${NEW_IMAGE_SHA:0:19}...) → skipping container restart"
   exit 0
 fi
