@@ -19,6 +19,13 @@
     '';
   };
 
+  services.postgresqlBackup = {
+    enable = true;
+    backupAll = true;
+    location = "/var/backup/postgresql/backups";
+    startAt = "daily";
+  };
+
   sops.secrets.postgres_password_warmplace = {
     key = "postgres_passwords/warmplace";
     owner = "postgres";
