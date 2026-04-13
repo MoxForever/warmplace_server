@@ -16,6 +16,7 @@
   };
 
   sops.templates.netdata-health-alarm-notify-conf = {
+    path = "/etc/netdata/health_alarm_notify.conf";
     owner = "netdata";
     group = "netdata";
     mode = "0440";
@@ -28,6 +29,5 @@
 
   services.netdata = {
     enable = true;
-    configDir."health_alarm_notify.conf" = config.sops.templates.netdata-health-alarm-notify-conf.path;
   };
 }
