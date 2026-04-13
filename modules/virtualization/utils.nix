@@ -10,6 +10,14 @@ with lib;
 
 let
   cfg = config.docker-deploy;
+  dockerEnvSecrets = mapAttrs' (
+    name: _:
+    nameValuePair "docker_env_${name}" {
+      key = "env/${name}";
+      owner = "deploy";
+      mode = "0400";
+    }
+  ) cfg;
 in
 
 {
@@ -34,7 +42,8 @@ in
         owner = "deploy";
         mode = "0400";
       };
-    };
+    }
+    // dockerEnvSecrets;
 
     environment.systemPackages = [
       dockerUpdateScript

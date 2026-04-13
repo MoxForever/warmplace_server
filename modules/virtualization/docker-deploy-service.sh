@@ -7,6 +7,7 @@ APP_PATH=""
 APP_DOCKERFILE=""
 APP_PORTS=""
 APP_VOLUMES=""
+APP_ENV_FILE=""
 
 require_value() {
   local arg_name="$1"
@@ -53,9 +54,14 @@ while [[ $# -gt 0 ]]; do
       APP_VOLUMES="$2"
       shift 2
       ;;
+    --env-file)
+      require_value "$1" "$2"
+      APP_ENV_FILE="$2"
+      shift 2
+      ;;
     *)
       echo "Unknown argument: $1" >&2
-      echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> --path <path> --dockerfile <file> --ports <csv> --volumes <csv>" >&2
+      echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> --path <path> --dockerfile <file> --ports <csv> --volumes <csv> --env-file <path>" >&2
       exit 1
       ;;
   esac
@@ -66,6 +72,7 @@ done
 : "${APP_BRANCH:?Missing required --branch}"
 : "${APP_PATH:?Missing required --path}"
 : "${APP_DOCKERFILE:?Missing required --dockerfile}"
+: "${APP_ENV_FILE:?Missing required --env-file}"
 
 TOKEN="$(github-app-token)"
 
@@ -162,7 +169,7 @@ fi
 docker run -d \
   --name "$APP_NAME" \
   --add-host=host.docker.internal:host-gateway \
-  --env-file .env \
+  --env-file "$APP_ENV_FILE" \
   "${PORT_ARGS[@]}" \
   "${VOLUME_ARGS[@]}" \
   "$APP_NAME:$APP_BRANCH-latest"

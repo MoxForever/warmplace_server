@@ -98,7 +98,8 @@ in
             --path "${app.path}" \
             --dockerfile "${app.dockerfile}" \
             --ports "${concatStringsSep "," app.ports}" \
-            --volumes "${concatStringsSep "," app.volumes}"
+            --volumes "${concatStringsSep "," app.volumes}" \
+            --env-file "${config.sops.secrets."docker_env_${name}".path}"
         '';
       }
     ) cfg;
