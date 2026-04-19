@@ -6,7 +6,9 @@
     branch = "master";
     dockerfile = "Dockerfile";
     ports = [ "8003:8080" ];
-    volumes = [ ];
+    volumes = [ 
+      "/home/deploy/hikka-data:/data"
+    ];
   };
 
   services.nginx.virtualHosts."hikka.moxforever.me" = {
