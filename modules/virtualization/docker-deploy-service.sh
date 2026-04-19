@@ -10,6 +10,49 @@ APP_VOLUMES=""
 APP_ENV_FILE=""
 FORCE_DEPLOY="false"
 
+NORMALIZED_ENV_FILE=""
+
+normalize_env_file() {
+  local src_file="$1"
+  local dst_file="$2"
+
+  : > "$dst_file"
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+
+    # Keep comments and empty lines out of Docker env-file input.
+    if [[ -z "${line//[[:space:]]/}" || "$line" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+
+    line="$(echo "$line" | sed -E 's/^[[:space:]]*export[[:space:]]+//')"
+
+    if [[ "$line" != *=* ]]; then
+      continue
+    fi
+
+    local key="${line%%=*}"
+    local value="${line#*=}"
+
+    key="$(echo "$key" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+
+    if [[ -z "$key" ]]; then
+      continue
+    fi
+
+    if [[ "$value" =~ ^\"(.*)\"$ ]]; then
+      value="${BASH_REMATCH[1]}"
+      value="${value//\\\"/\"}"
+      value="${value//\\\\/\\}"
+    elif [[ "$value" =~ ^\'(.*)\'$ ]]; then
+      value="${BASH_REMATCH[1]}"
+    fi
+
+    printf '%s=%s\n' "$key" "$value" >> "$dst_file"
+  done < "$src_file"
+}
+
 require_value() {
   local arg_name="$1"
   if [[ $# -lt 2 || "$2" == --* ]]; then
@@ -78,6 +121,16 @@ done
 : "${APP_PATH:?Missing required --path}"
 : "${APP_DOCKERFILE:?Missing required --dockerfile}"
 : "${APP_ENV_FILE:?Missing required --env-file}"
+
+if [[ ! -f "$APP_ENV_FILE" ]]; then
+  echo "Env file not found: $APP_ENV_FILE" >&2
+  exit 1
+fi
+
+NORMALIZED_ENV_FILE="$(mktemp /tmp/${APP_NAME}.env.XXXXXX)"
+trap '[[ -n "$NORMALIZED_ENV_FILE" ]] && rm -f "$NORMALIZED_ENV_FILE"' EXIT
+
+normalize_env_file "$APP_ENV_FILE" "$NORMALIZED_ENV_FILE"
 
 FORCE_MARKER="/run/docker-deploy-force/$APP_NAME"
 if [[ -f "$FORCE_MARKER" ]]; then
@@ -180,7 +233,7 @@ fi
 docker run -d \
   --name "$APP_NAME" \
   --add-host=host.docker.internal:host-gateway \
-  --env-file "$APP_ENV_FILE" \
+  --env-file "$NORMALIZED_ENV_FILE" \
   "${PORT_ARGS[@]}" \
   "${VOLUME_ARGS[@]}" \
   "$APP_NAME:$APP_BRANCH-latest"
