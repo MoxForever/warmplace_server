@@ -7,6 +7,7 @@ APP_PATH=""
 APP_DOCKERFILE=""
 APP_PORTS=""
 APP_VOLUMES=""
+APP_COMMAND=""
 APP_ENV_FILE=""
 FORCE_DEPLOY="false"
 
@@ -98,6 +99,11 @@ while [[ $# -gt 0 ]]; do
       APP_VOLUMES="$2"
       shift 2
       ;;
+    --command)
+      require_value "$1" "$2"
+      APP_COMMAND="$2"
+      shift 2
+      ;;
     --env-file)
       require_value "$1" "$2"
       APP_ENV_FILE="$2"
@@ -109,7 +115,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown argument: $1" >&2
-      echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> --path <path> --dockerfile <file> --ports <csv> --volumes <csv> --env-file <path> [--force]" >&2
+      echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> --path <path> --dockerfile <file> --ports <csv> --volumes <csv> --command <csv> --env-file <path> [--force]" >&2
       exit 1
       ;;
   esac
@@ -230,12 +236,21 @@ if [[ -n "${APP_VOLUMES:-}" ]]; then
 fi
 
 # === RUN NEW CONTAINER ===
+COMMAND_ARGS=()
+if [[ -n "${APP_COMMAND:-}" ]]; then
+  IFS=',' read -r -a COMMAND <<< "$APP_COMMAND"
+  for arg in "${COMMAND[@]}"; do
+    [[ -n "$arg" ]] && COMMAND_ARGS+=("$arg")
+  done
+fi
+
 docker run -d \
   --name "$APP_NAME" \
   --add-host=host.docker.internal:host-gateway \
   --env-file "$NORMALIZED_ENV_FILE" \
   "${PORT_ARGS[@]}" \
   "${VOLUME_ARGS[@]}" \
-  "$APP_NAME:$APP_BRANCH-latest"
+  "$APP_NAME:$APP_BRANCH-latest" \
+  "${COMMAND_ARGS[@]}"
 
 echo "$GIT_HASH" > "$DEPLOYED_HASH_FILE"

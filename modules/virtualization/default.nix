@@ -58,6 +58,11 @@ in
             type = types.str;
             default = "Dockerfile";
           };
+
+          command = mkOption {
+            type = types.listOf types.str;
+            default = [ ];
+          };
         };
       }
     );
@@ -99,6 +104,7 @@ in
             --dockerfile "${app.dockerfile}" \
             --ports "${concatStringsSep "," app.ports}" \
             --volumes "${concatStringsSep "," app.volumes}" \
+            --command "${concatStringsSep "," app.command}" \
             --env-file "${config.sops.secrets."docker_env_${name}".path}"
         '';
       }
