@@ -14,6 +14,7 @@
       "/data/sessions"
     ];
     volumes = [
+      "/home/deploy/hikka-modules:/data/loaded_modules"
       "/home/deploy/hikka-data:/data/sessions"
     ];
   };
