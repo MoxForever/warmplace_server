@@ -36,6 +36,11 @@
     owner = "postgres";
   };
 
+  sops.secrets.postgres_password_mock_service = {
+    key = "postgres_passwords/mock_service";
+    owner = "postgres";
+  };
+
   systemd.services.postgresql-set-passwords = {
     description = "Set PostgreSQL passwords from sops map";
     after = [ "postgresql.service" ];
