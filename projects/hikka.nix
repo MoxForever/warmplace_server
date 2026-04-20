@@ -7,11 +7,9 @@
     dockerfile = "Dockerfile";
     ports = [ "8003:8080" ];
     command = [
-      "python"
-      "-m"
-      "hikka"
-      "--data-root"
-      "/data/sessions"
+      "sh"
+      "-c"
+      "pip install aiogoogle pydantic && python -m hikka --data-root /data/sessions"
     ];
     volumes = [
       "/home/deploy/hikka-modules:/data/loaded_modules"
