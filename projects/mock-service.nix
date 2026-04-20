@@ -15,7 +15,7 @@
     repo = "https://github.com/WarmYaeShop/mock_service";
     branch = "main";
     dockerfile = "docker/Dockerfile";
-    ports = [ "8005:80" ];
+    ports = [ "8005:8000" ];
   };
 
   services.nginx.virtualHosts."test-wy.moxforever.me" = {
