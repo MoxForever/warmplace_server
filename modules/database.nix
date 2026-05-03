@@ -32,7 +32,7 @@
   };
 
   sops.secrets.postgres_password_warmplace_dev = {
-    key = "postgres_passwords/warmplace_dev";
+    key = "postgres_passwords/warmplace-dev";
     owner = "postgres";
   };
 
