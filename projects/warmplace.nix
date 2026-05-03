@@ -13,7 +13,7 @@
 
   services.redis.servers.warmplace = {
     enable = true;
-    port = 6379;
+    port = 6381;
     settings = {
       bind = lib.mkForce "0.0.0.0";
       "protected-mode" = "no";
