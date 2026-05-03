@@ -22,8 +22,12 @@
     forceSSL = true;
     enableACME = true;
 
-    locations."/" = {
-      proxyPass = "http://localhost:8005/";
+    locations."/donatehub/" = {
+      proxyPass = "http://localhost:8005/donatehub/";
+    };
+
+    locations."/antilopay/" = {
+      proxyPass = "http://localhost:8005/antilopay/";
     };
   };
 }
