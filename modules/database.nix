@@ -31,6 +31,11 @@
     owner = "postgres";
   };
 
+  sops.secrets.postgres_password_warmplace_dev = {
+    key = "postgres_passwords/warmplace_dev";
+    owner = "postgres";
+  };
+
   sops.secrets.postgres_password_yaeshop = {
     key = "postgres_passwords/yaeshop";
     owner = "postgres";
@@ -81,6 +86,8 @@
 
             set_role_password "warmplace" "${config.sops.secrets.postgres_password_warmplace.path}"
             set_role_password "yaeshop" "${config.sops.secrets.postgres_password_yaeshop.path}"
+            set_role_password "warmplace-dev" "${config.sops.secrets.postgres_password_warmplace_dev.path}"
+            set_role_password "mock-service" "${config.sops.secrets.postgres_password_mock_service.path}"
     '';
   };
 }
