@@ -24,7 +24,7 @@
     repo = "https://github.com/WarmYaeShop/warmplace_shop";
     branch = "dev";
     dockerfile = "docker/Dockerfile";
-    ports = [ "8006:80" ];
+    ports = [ "8006:8000" ];
   };
 
   services.nginx.virtualHosts."test-wy.moxforever.me" = {
