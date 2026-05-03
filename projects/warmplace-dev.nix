@@ -24,7 +24,7 @@
     repo = "https://github.com/WarmYaeShop/warmplace_shop";
     branch = "dev";
     dockerfile = "docker/Dockerfile";
-    ports = [ "8001:80" ];
+    ports = [ "8006:80" ];
   };
 
   services.nginx.virtualHosts."test-wy.moxforever.me" = {
@@ -32,11 +32,11 @@
     enableACME = true;
 
     locations."/telegram/" = {
-      proxyPass = "http://localhost:8005/telegram/";
+      proxyPass = "http://localhost:8006/telegram/";
     };
 
     locations."/service/" = {
-      proxyPass = "http://localhost:8005/service/";
+      proxyPass = "http://localhost:8006/service/";
     };
   };
 }
