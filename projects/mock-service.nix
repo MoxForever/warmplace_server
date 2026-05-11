@@ -22,6 +22,10 @@
     forceSSL = true;
     enableACME = true;
 
+    locations."/mock_telegram/" = {
+      proxyPass = "http://localhost:8005/telegram/";
+    }
+
     locations."/donatehub/" = {
       proxyPass = "http://localhost:8005/donatehub/";
     };
