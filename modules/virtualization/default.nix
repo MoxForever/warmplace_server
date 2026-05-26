@@ -105,7 +105,7 @@ in
             --app-name "${name}" \
             --repo "${app.repo}" \
             --branch "${app.branch}" \
-            ${optionalString (app.rev != null) "--rev \"${app.rev}\" \\\n+"}
+              ${optionalString (app.rev != null) "--rev \"${app.rev}\" \\\n"}
             --path "${app.path}" \
             --dockerfile "${app.dockerfile}" \
             --ports "${concatStringsSep "," app.ports}" \
