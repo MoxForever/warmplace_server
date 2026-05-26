@@ -3,7 +3,6 @@ set -euo pipefail
 APP_NAME=""
 APP_REPO=""
 APP_BRANCH=""
-APP_REV=""
 APP_PATH=""
 APP_DOCKERFILE=""
 APP_PORTS=""
@@ -80,11 +79,6 @@ while [[ $# -gt 0 ]]; do
       APP_BRANCH="$2"
       shift 2
       ;;
-    --rev)
-      require_value "$1" "$2"
-      APP_REV="$2"
-      shift 2
-      ;;
     --path)
       require_value "$1" "$2"
       APP_PATH="$2"
@@ -121,7 +115,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown argument: $1" >&2
-      echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> [--rev <git-ref>] --path <path> --dockerfile <file> --ports <csv> --volumes <csv> --command <csv> --env-file <path> [--force]" >&2
+      echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> --path <path> --dockerfile <file> --ports <csv> --volumes <csv> --command <csv> --env-file <path> [--force]" >&2
       exit 1
       ;;
   esac
@@ -178,12 +172,8 @@ cd "$APP_DIR"
 git remote set-url origin "$REPO_URL"
 
 git fetch origin "$APP_BRANCH"
-if [[ -n "$APP_REV" ]]; then
-  git checkout "$APP_REV"
-else
-  git checkout "$APP_BRANCH"
-  git pull origin "$APP_BRANCH"
-fi
+git checkout "$APP_BRANCH"
+git pull origin "$APP_BRANCH"
 
 # === GIT HASH ===
 GIT_HASH=$(git rev-parse HEAD)

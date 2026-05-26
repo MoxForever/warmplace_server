@@ -3,8 +3,7 @@
 {
   docker-deploy."cdn" = {
     repo = "https://github.com/openinary/openinary";
-    branch = "main";
-    rev = "86ef31d86d45f2b1475b99dd2f0e224025e9a08f";
+    branch = "v0.1.8";
     dockerfile = "docker/api.Dockerfile";
     ports = [ "8004:3000" ];
     volumes = [
