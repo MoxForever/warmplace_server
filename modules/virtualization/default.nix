@@ -39,6 +39,11 @@ in
             default = "main";
           };
 
+          rev = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+          };
+
           ports = mkOption {
             type = types.listOf types.str;
             default = [ ];
@@ -100,6 +105,7 @@ in
             --app-name "${name}" \
             --repo "${app.repo}" \
             --branch "${app.branch}" \
+            ${optionalString (app.rev != null) "--rev \"${app.rev}\" \\\n+"}
             --path "${app.path}" \
             --dockerfile "${app.dockerfile}" \
             --ports "${concatStringsSep "," app.ports}" \
