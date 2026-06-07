@@ -6,7 +6,7 @@
       image = "amir20/dozzle:latest";
 
       ports = [
-        "8080:19999"
+        "19999:8080"
       ];
 
       volumes = [
