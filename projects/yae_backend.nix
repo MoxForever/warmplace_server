@@ -23,7 +23,7 @@
     enableACME = true;
 
     locations."/site/" = {
-      proxyPass = "http://localhost:8007/site/";
+      proxyPass = "http://localhost:8007/api/";
     };
   };
 }
