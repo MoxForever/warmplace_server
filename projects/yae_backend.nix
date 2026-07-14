@@ -13,7 +13,7 @@
 
   docker-deploy."yae_backend" = {
     repo = "https://github.com/WarmYaeShop/yae_backend";
-    branch = "dev";
+    branch = "main";
     dockerfile = "docker/Dockerfile";
     ports = [ "8007:8000" ];
   };
