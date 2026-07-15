@@ -25,5 +25,9 @@
     locations."/site/" = {
       proxyPass = "http://localhost:8007/api/";
     };
+
+    locations."/service/" = {
+      proxyPass = "http://localhost:8007/service/";
+    };
   };
 }
