@@ -2,7 +2,7 @@
   description = "Warmplace NixOS configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -15,7 +15,7 @@
       ...
     }:
     let
-      stateVersion = "25.11";
+      stateVersion = "26.05";
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
