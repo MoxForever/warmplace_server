@@ -1,5 +1,11 @@
 set -euo pipefail
 
+log() {
+  printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+}
+
+log "Starting deployment"
+
 APP_NAME=""
 APP_REPO=""
 APP_BRANCH=""
@@ -17,6 +23,7 @@ normalize_env_file() {
   local src_file="$1"
   local dst_file="$2"
 
+  log "Normalizing env file: $src_file"
   : > "$dst_file"
 
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -57,7 +64,7 @@ normalize_env_file() {
 require_value() {
   local arg_name="$1"
   if [[ $# -lt 2 || "$2" == --* ]]; then
-    echo "Missing value for $arg_name" >&2
+    log "ERROR: Missing value for $arg_name" >&2
     exit 1
   fi
 }
@@ -114,12 +121,14 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     *)
-      echo "Unknown argument: $1" >&2
+      log "ERROR: Unknown argument: $1" >&2
       echo "Usage: docker-deploy-service --app-name <name> --repo <url> --branch <branch> --path <path> --dockerfile <file> --ports <csv> --volumes <csv> --command <csv> --env-file <path> [--force]" >&2
       exit 1
       ;;
   esac
 done
+
+log "Arguments parsed for app: $APP_NAME"
 
 : "${APP_NAME:?Missing required --app-name}"
 : "${APP_REPO:?Missing required --repo}"
@@ -129,24 +138,29 @@ done
 : "${APP_ENV_FILE:?Missing required --env-file}"
 
 if [[ ! -f "$APP_ENV_FILE" ]]; then
-  echo "Env file not found: $APP_ENV_FILE" >&2
+  log "ERROR: Env file not found: $APP_ENV_FILE" >&2
   exit 1
 fi
 
+log "Validated required arguments and env file"
 NORMALIZED_ENV_FILE="$(mktemp /tmp/${APP_NAME}.env.XXXXXX)"
 trap '[[ -n "$NORMALIZED_ENV_FILE" ]] && rm -f "$NORMALIZED_ENV_FILE"' EXIT
 
 normalize_env_file "$APP_ENV_FILE" "$NORMALIZED_ENV_FILE"
+log "Env file normalized"
 
 FORCE_MARKER="/run/docker-deploy-force/$APP_NAME"
 if [[ -f "$FORCE_MARKER" ]]; then
   FORCE_DEPLOY="true"
   rm -f "$FORCE_MARKER" || true
+  log "Force marker found; forcing deployment"
 fi
 
+log "Requesting GitHub App token"
 TOKEN="$(github-app-token)"
 
 REPO_URL=$(echo "$APP_REPO" | sed 's#https://github.com/#https://x-access-token:'"$TOKEN"'@github.com/#')
+log "Repository URL prepared"
 
 BASE_PATH="$APP_PATH"
 if [[ "$BASE_PATH" == "~" ]]; then
@@ -157,67 +171,86 @@ fi
 
 APP_DIR="$BASE_PATH/$APP_NAME"
 mkdir -p "$BASE_PATH"
+log "Deployment directory prepared: $APP_DIR"
 
 # clone if not exists
 if [ ! -d "$APP_DIR/.git" ]; then
+  log "Cloning repository"
   git clone \
     -b "$APP_BRANCH" \
     --single-branch \
     "$REPO_URL" \
     "$APP_DIR"
+else
+  log "Repository already cloned"
 fi
 
 cd "$APP_DIR"
+log "Updating repository"
 
 git remote set-url origin "$REPO_URL"
 
 git fetch origin "$APP_BRANCH"
 git checkout "$APP_BRANCH"
 git pull origin "$APP_BRANCH"
+log "Repository updated"
 
 # === GIT HASH ===
 GIT_HASH=$(git rev-parse HEAD)
+log "Current Git commit: $GIT_HASH"
 
 DEPLOYED_HASH_FILE="$APP_DIR/.docker-deploy-commit"
 PREVIOUS_DEPLOYED_HASH=""
 if [ -f "$DEPLOYED_HASH_FILE" ]; then
   PREVIOUS_DEPLOYED_HASH=$(cat "$DEPLOYED_HASH_FILE")
 fi
+log "Previous deployed commit: ${PREVIOUS_DEPLOYED_HASH:-none}"
 
 if [[ "$FORCE_DEPLOY" != "true" && "$PREVIOUS_DEPLOYED_HASH" == "$GIT_HASH" && -n "$PREVIOUS_DEPLOYED_HASH" ]]; then
-  echo "No changes detected (git commit: $GIT_HASH) -> skipping deploy"
+  log "No changes detected (git commit: $GIT_HASH); skipping deploy"
   exit 0
 fi
 
 # === CHECK CURRENT IMAGE SHA ===
+log "Checking current Docker image"
 CURRENT_IMAGE_SHA=""
 if docker images --format '{{.Repository}}:{{.Tag}}' | grep -Fxq "$APP_NAME:$APP_BRANCH-latest"; then
   CURRENT_IMAGE_SHA=$(docker image inspect "$APP_NAME:$APP_BRANCH-latest" --format='{{.ID}}' 2>/dev/null || true)
 fi
+log "Current image ID: ${CURRENT_IMAGE_SHA:-none}"
 
 # === BUILD IMAGE ===
+BUILD_LOG="/tmp/docker-build-$APP_NAME.log"
+log "Building Docker image; full log: $BUILD_LOG"
 docker build \
   -f "$APP_DIR/$APP_DOCKERFILE" \
   --build-arg GIT_COMMIT="$GIT_HASH" \
   -t "$APP_NAME:$APP_BRANCH-latest" \
-  . > /tmp/docker-build-$APP_NAME.log 2>&1
+  . 2>&1 | tee "$BUILD_LOG"
 
 # === CHECK NEW IMAGE SHA ===
+log "Checking newly built Docker image"
 NEW_IMAGE_SHA=$(docker image inspect "$APP_NAME:$APP_BRANCH-latest" --format='{{.ID}}')
+log "New image ID: $NEW_IMAGE_SHA"
 
 # === SKIP IF IMAGE UNCHANGED ===
 if [[ "$FORCE_DEPLOY" != "true" && "$CURRENT_IMAGE_SHA" == "$NEW_IMAGE_SHA" && -n "$CURRENT_IMAGE_SHA" ]]; then
-  echo "Image unchanged (SHA: ${NEW_IMAGE_SHA:0:19}...) → skipping container restart"
+  log "Image unchanged (SHA: ${NEW_IMAGE_SHA:0:19}...); skipping container restart"
   exit 0
 fi
 
 # === STOP OLD CONTAINER ===
+log "Checking for existing container"
 if docker ps -a --format '{{.Names}}' | grep -Fxq "$APP_NAME"; then
+  log "Stopping and removing existing container"
   docker stop "$APP_NAME" || true
   docker rm "$APP_NAME" || true
+else
+  log "Existing container not found"
 fi
 
 # === PORTS ===
+log "Preparing port mappings"
 PORT_ARGS=()
 if [[ -n "${APP_PORTS:-}" ]]; then
   IFS=',' read -r -a PORTS <<< "$APP_PORTS"
@@ -227,6 +260,7 @@ if [[ -n "${APP_PORTS:-}" ]]; then
 fi
 
 # === VOLUMES ===
+log "Preparing volume mappings"
 VOLUME_ARGS=()
 if [[ -n "${APP_VOLUMES:-}" ]]; then
   IFS=',' read -r -a VOLUMES <<< "$APP_VOLUMES"
@@ -236,6 +270,7 @@ if [[ -n "${APP_VOLUMES:-}" ]]; then
 fi
 
 # === RUN NEW CONTAINER ===
+log "Preparing container command"
 COMMAND_ARGS=()
 if [[ -n "${APP_COMMAND:-}" ]]; then
   IFS=',' read -r -a COMMAND <<< "$APP_COMMAND"
@@ -244,6 +279,7 @@ if [[ -n "${APP_COMMAND:-}" ]]; then
   done
 fi
 
+log "Starting new container"
 docker run -d \
   --name "$APP_NAME" \
   --add-host=host.docker.internal:host-gateway \
@@ -254,3 +290,4 @@ docker run -d \
   "${COMMAND_ARGS[@]}"
 
 echo "$GIT_HASH" > "$DEPLOYED_HASH_FILE"
+log "Deployment completed successfully"
