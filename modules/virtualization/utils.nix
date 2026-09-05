@@ -22,7 +22,10 @@ in
 
 {
   config = mkIf (cfg != { }) {
-    virtualisation.docker.enable = true;
+    virtualisation.docker = {
+      enable = true;
+      package = pkgs.docker_29;
+    };
 
     sops.secrets = {
       github_app_app_id = {
