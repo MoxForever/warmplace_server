@@ -5,7 +5,6 @@
     repo = "https://github.com/Heroku-userbot/Heroku";
     branch = "master";
     dockerfile = "Dockerfile";
-    ports = [ "8003:8080" ];
     command = [
       "python3"
       "-m"
