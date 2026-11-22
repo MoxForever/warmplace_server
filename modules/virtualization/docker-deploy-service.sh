@@ -280,6 +280,7 @@ if [[ -n "${APP_COMMAND:-}" ]]; then
 fi
 
 log "Starting new container"
+log "Args: ${PORT_ARGS[*]} ${VOLUME_ARGS[*]} ${COMMAND_ARGS[*]}"
 docker run -d \
   --name "$APP_NAME" \
   --add-host=host.docker.internal:host-gateway \
