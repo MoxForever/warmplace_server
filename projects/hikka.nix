@@ -9,7 +9,7 @@
     command = [
       "python3"
       "-m"
-      "hikka"
+      "heroku"
       "--root"
       "--no-auth"
       "--data-dir=/data/sessions"
