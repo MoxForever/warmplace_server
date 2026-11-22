@@ -12,7 +12,7 @@
       "heroku"
       "--root"
       "--no-auth"
-      "--data-dir=/data/sessions"
+      "--data-root=/data/sessions"
     ];
     volumes = [
       "/home/deploy/hikka-modules:/data/loaded_modules"
