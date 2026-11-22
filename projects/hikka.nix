@@ -2,7 +2,7 @@
 
 {
   docker-deploy."hikka" = {
-    repo = "https://github.com/hikariatama/hikka";
+    repo = "https://github.com/Heroku-userbot/Heroku";
     branch = "master";
     dockerfile = "Dockerfile";
     ports = [ "8003:8080" ];
