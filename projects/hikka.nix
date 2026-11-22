@@ -3,7 +3,7 @@
 {
   docker-deploy."hikka" = {
     repo = "https://github.com/Heroku-userbot/Heroku";
-    branch = "main";
+    branch = "master";
     dockerfile = "Dockerfile";
     ports = [ "8003:8080" ];
     volumes = [
