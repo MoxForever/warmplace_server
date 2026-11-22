@@ -12,6 +12,7 @@
       "hikka"
       "--root"
       "--no-auth"
+      "--data-dir=/data/sessions"
     ];
     volumes = [
       "/home/deploy/hikka-modules:/data/loaded_modules"
