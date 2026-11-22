@@ -6,6 +6,13 @@
     branch = "master";
     dockerfile = "Dockerfile";
     ports = [ "8003:8080" ];
+    command = [
+      "python3"
+      "-m"
+      "hikka"
+      "--root"
+      "--no-auth"
+    ];
     volumes = [
       "/home/deploy/hikka-modules:/data/loaded_modules"
       "/home/deploy/hikka-data:/data/sessions"
