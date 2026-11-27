@@ -20,4 +20,14 @@
     createHome = true;
     extraGroups = [ "docker" ];
   };
+  users.users.yaeshop = {
+    isNormalUser = true;
+    shell = pkgs.fish;
+    home = "/home/yaeshop";
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMWijPjlQaRvYXxXUs30LqAz7He9wyD5wLUVckL487CR"
+    ];
+    createHome = true;
+    extraGroups = [ "docker" ];
+  }
 }
