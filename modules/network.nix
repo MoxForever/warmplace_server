@@ -4,9 +4,27 @@
   services.nginx = {
     enable = true;
   };
-  security.acme = {
-    acceptTerms = true;
-    defaults.email = "dimamolchanov2018@gmail.com";
+  security = {
+    acme = {
+      acceptTerms = true;
+      defaults.email = "dimamolchanov2018@gmail.com";
+    };
+    security.polkit = {
+      enable = true;
+
+      extraConfig = ''
+        polkit.addRule(function(action, subject) {
+          if (
+            action.id == "org.freedesktop.systemd1.manage-units" &&
+            subject.isInGroup("wheel") &&
+            action.lookup("unit").startsWith("docker-deploy@") &&
+            action.lookup("verb") == "start"
+          ) {
+            return polkit.Result.YES;
+          }
+        });
+      '';
+    };
   };
   networking = {
     firewall = {
