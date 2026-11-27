@@ -29,5 +29,5 @@
     ];
     createHome = true;
     extraGroups = [ "docker" ];
-  }
+  };
 }
