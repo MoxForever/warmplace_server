@@ -9,7 +9,7 @@
       acceptTerms = true;
       defaults.email = "dimamolchanov2018@gmail.com";
     };
-    security.polkit = {
+    polkit = {
       enable = true;
 
       extraConfig = ''
